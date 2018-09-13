@@ -7,16 +7,6 @@ learning tensorflow from beginning
 tensorflow framework has two parts, one is tensor graph, the other is running
 sessions, during which we often evaluate the session result and make an end.
 
-The topic is a sub of the forward leading car detection project.
-assume we have inputs as: 
-    many bounding boxes [x, y, width, height]
-    two classes {'sideways':0, 'leading':1}
-    loss funtion: cross entropy
-
-objective:
-    build a light-weighted nerual network, train it, save the event, checkpoint,
-    pipeline(if possible) and a frozengraph in pb format
-
 @author: Wen Wen
 """
 
@@ -45,11 +35,11 @@ from numpy.random import RandomState
 ''' variables & conv kernels'''
 # note that tf.variable is a function, tf.Variable is a class, here we use the 
 # class
-w1=tf.Variable(tf.random_normal([10,12],stddev=1,seed=1),name='w1') # old version
+w1=tf.Variable(tf.random_normal([4,4],stddev=1,seed=1),name='w1') # old version
 #w1=tf.get_variable('w1',initializer=tf.random_normal([3,3],stddev=1,seed=1))
 # standard deviation 1, generating seed 1. usually the seed is for making 
 # comparison among different implementations
-w2=tf.Variable(tf.truncated_normal([12,1],stddev=1,seed=1),name='w2') # old version
+w2=tf.Variable(tf.truncated_normal([4,1],stddev=1,seed=1),name='w2') # old version
 #w2=tf.get_variable('w2',initializer=tf.truncated_normal([3,1],stddev=1,seed=1))
 # truncated normal function preserve the value in between [mean-2*stddev,mean+2*stddev] only
 #print(w1,w2)
@@ -57,7 +47,7 @@ w2=tf.Variable(tf.truncated_normal([12,1],stddev=1,seed=1),name='w2') # old vers
 ''' placeholder '''
 # the placeholder is for the later input given from optional arguements, it will
 # only create a RAM without values, the values will be fed during session
-x=tf.placeholder(tf.float32,shape=(None,10)) # number of input, demonsion
+x=tf.placeholder(tf.float32,shape=(None,4)) # number of input, demonsion
 y=tf.placeholder(tf.float32,shape=(None,1))
 
 ''' define the layers '''
@@ -77,8 +67,8 @@ train_step=tf.train.AdamOptimizer(0.001).minimize(cross_entropy)
 rdm=RandomState(1) # use a certain seed number to keep input unchanged 
 data_size=5000
 batch_size=10
-X=rdm.rand(data_size,10) # pseudo input
-Y = [[int(x1+x2+x3+x4+x5+x6+x7+x8+x9+x10<5.0)] for (x1,x2,x3,x4,x5,x6,x7,x8,x9,x10) in X] # pseudo label as benchmark
+X=rdm.rand(data_size,4) # pseudo input
+Y = [[int(x1+x2+x3+x4<2.0)] for (x1,x2,x3,x4) in X] # pseudo label as benchmark
 
 
 
