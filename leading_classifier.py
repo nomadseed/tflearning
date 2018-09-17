@@ -14,6 +14,13 @@ objective:
     build a light-weighted nerual network, train it, save the event, checkpoint,
     pipeline(if possible) and a frozengraph in pb format
     
+Note:
+    1. don't run the script while running a tensorboard under CWD
+    2. every tensor should be under tf.variable_scope('XXX',reuse=tf.AUTO_REUSE)
+        if debugging the network with spyder, for as default, the spyder won't 
+        allow reusing same piece of RAM for different tensor
+        
+    
 @author: Wen Wen
 """
 
@@ -24,7 +31,7 @@ import tensorflow as tf
 
 from numpy.random import RandomState
 
-class TinyCNN():
+class Tiny_CNN():
     '''
     a customized tiny cnn just for simple classification works
     default dimension of the data is 4, learning rate 0.001
@@ -32,8 +39,9 @@ class TinyCNN():
     '''
     def __init__(self, dim=4, learning_rate=0.001):
         ###########################  Part I: build a tensor graph #####################
-        with tf.variable_scope('scope1',reuse=tf.AUTO_REUSE):
-            # use a variable scope to specify some certain specs for those variables 
+        with tf.variable_scope('TinyCNN',reuse=tf.AUTO_REUSE):
+            # use a variable scope to specify some certain specs for those 
+            # variables.   
             ''' variables & conv kernels'''
             self.w1=tf.get_variable('w1',initializer=tf.random_normal([dim,dim],stddev=1,seed=1))
             self.w2=tf.get_variable('w2',initializer=tf.truncated_normal([dim,1],stddev=1,seed=1))
@@ -52,7 +60,7 @@ class TinyCNN():
             # minimize the loss using Adam Optimizer
             self.train_step=tf.train.AdamOptimizer(learning_rate).minimize(self.cross_entropy)
 
-def def_Input(filepath=None):   
+def Def_Input(filepath=None):   
     ''' 
     define the input, 
     use randomly generated data and label for debugging, if filepath== None
@@ -66,6 +74,14 @@ def def_Input(filepath=None):
         
     return data, label
 
+def Sess_Summaries(cnn):
+  """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
+  with tf.name_scope('loss'):
+    # define trianing loss
+    training_loss = cnn.cross_entropy
+    # save current state of training loss into summary variable
+    tf.summary.scalar('training_loss', training_loss)
+
 
 ##################### Part II: run the session, do evaluation #################
     
@@ -74,37 +90,57 @@ if __name__ == "__main__":
     
     ''' prepare input '''
     batch_size=10
-    data, label = def_Input()
-    data_size=len(data)
+    train_data, train_label = Def_Input()
+    data_size=len(train_data)
+    
+    ''' clear previous graph in memory '''
+    # Clears the default graph stack and resets the global default graph.
+    # this is especially useful while debugging
+    tf.reset_default_graph()
     
     ''' initiate a network '''
-    tinycnn=TinyCNN()
+    tinycnn=Tiny_CNN()
+    Sess_Summaries(tinycnn)
     
-    ''' initialization '''
+    ''' initialize a session '''
     with tf.Session() as sess:
         init = tf.global_variables_initializer()
         sess.run(init)
 
         ''' run session '''
-        ''' save the tensor graph '''
-        graph_writer = tf.summary.FileWriter('./ckpt', sess.graph)
+        ''' save the tensor graph (train)'''
+        train_writer = tf.summary.FileWriter('./ckpt', sess.graph)
+        merged = tf.summary.merge_all()
         ckpt_saver = tf.train.Saver()
         ckpt_saver.save(sess, './ckpt/model', global_step=0) # original status
         
-        steps=10001
-        for i in range(steps):
+        max_steps=10001
+        for step in range(max_steps):
             # choose start and end point, make sure do the calculation in a 
             # single epoch if step is too large, training epoches repeatly
-            start = i * batch_size % data_size 
+            start = step * batch_size % data_size 
             end = min(start + batch_size,data_size)
-            sess.run(tinycnn.train_step,feed_dict={tinycnn.x:data[start:end],tinycnn.y:label[start:end]})
-            if i % 200 == 0:
-                training_loss= sess.run(tinycnn.cross_entropy,feed_dict={tinycnn.x:data,tinycnn.y:label})
-                print("iteration %d, training loss %g" %(i,training_loss))
-        
+            
+            ''' training '''
+            # training steps
+            # it's observed that if we put a [start:end] after the data and 
+            # label array, it will process way faster than not putting it
+            summary, _ = sess.run([merged,tinycnn.train_step],feed_dict={tinycnn.x:train_data[start:end],tinycnn.y:train_label[start:end]})
+            
+            # save training result per 200 steps
+            if step % 1000 == 0:
+                # when calculate the loss, never put a [start:end] after data and label
+                train_loss = sess.run(tinycnn.cross_entropy,feed_dict={tinycnn.x:train_data,tinycnn.y:train_label})
+                print("iteration %d, training loss %g" %(step,train_loss))
+                train_writer.add_summary(summary, step)
+
+            ''' validation '''
+            
+                
+            
         # close file writer and session
-        ckpt_saver.save(sess, './ckpt/model', global_step=steps) # final status
-        graph_writer.close()
+        ckpt_saver.save(sess, './ckpt/model', global_step=max_steps) # final status
+        train_writer.close()
 
     
     print("Porgram ended for reaching maximum training steps")
