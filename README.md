@@ -1,4 +1,5 @@
-# tflearning
+# TensorFlow Learning
+This is a private project for learning how TensorFlow framework works in depth, then how to use peripheral APIs
 
 # step1: learn git cmds
 \[[link](https://arxiv.org/abs/1611.10012)\]
