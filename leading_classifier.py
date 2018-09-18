@@ -34,6 +34,8 @@ import tensorflow as tf
 
 from numpy.random import RandomState
 
+########################### Part I: build tensor graph ########################
+
 class Tiny_CNN():
     '''
     a customized tiny cnn just for simple classification works
@@ -41,7 +43,7 @@ class Tiny_CNN():
     
     '''
     def __init__(self, dim=4, learning_rate=0.0001):
-        ###########################  Part I: build a tensor graph #####################
+        
         with tf.variable_scope('TinyCNN',reuse=tf.AUTO_REUSE):
             # use a variable scope to specify some certain specs for those 
             # variables.   
@@ -78,7 +80,8 @@ class Tiny_CNN():
     def get_global_step(self,globalstep):
         self.global_step=globalstep
 
-            
+###########################  Part II: Util functions ##########################
+           
 def Load_json_anno(filepath,jsonlabel='annotationfull',foldernumber=float('Inf')):
     '''
     load annotation from json files
@@ -191,7 +194,7 @@ def Sess_summaries(cnn):
         tf.summary.scalar('training_loss', training_loss)
 
     
-##################### Part II: run the session, do evaluation #################
+#################### Part III: run the session, do evaluation #################
     
 if __name__ == "__main__":
     ### Define the optional arguements
